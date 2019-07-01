@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" 
+          content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Mini App</title>
+
+    <style>
+      
+      .mdc-typography--headline4 {
+        margin: 0.5em;
+      }
+      .tip {
+        float: right;
+      }
+      .menu {
+        margin-top: 1em;
+        margin-bottom: 1em;
+        margin-right: auto;
+        margin-left: auto;
+        display: inline-block;
+      }
+      .menu .item {
+        width: 40%;
+        margin: 0.4em;
+        padding: 0.4em;
+        border: solid white 1px;
+        display:  inline-block;
+        cursor: pointer;
+      }
+      .menu img {
+        display: block;
+        min-width: 131px;
+        min-height: 150px;
+        width: 100%;
+      }
+      p {
+        text-align: center;
+        min-height: 32px;
+      }
+      .actions span {
+        transform: scale(1.5);
+        cursor: pointer;
+      }
+      .actions {
+        text-align: center;
+        margin-top: 1em;
+      }
+      .rated {
+        color: orange;
+      }
+      .item[data-selected] {
+        border-color: #333;
+      }
+      body {
+        background: white;
+      }
+      
+    </style>
+  </head>
+  
+  <body>
+    <h1 class = 'mdc-typography--headline4'><span class = 'tip'>TiPY</span> </h1>
+    
+    <Div class = 'menu'>
+      <Div class = 'item'>
+        <img src = "https://via.placeholder.com/300.png/09f/fff?text=Meal1">
+        <p class = 'mdc-typography--headline6'>Meal1</p>
+      </Div>
+      <Div class = 'item'>
+        <img src = "https://via.placeholder.com/300.png/09f/fff?text=Meal2">
+        <p class = 'mdc-typography--headline6'>Meal2</p>
+      </Div>
+      <Div class = 'item'>
+        <img src = "https://via.placeholder.com/300.png/09f/fff?text=Meal3">
+        <p class = 'mdc-typography--headline6'>Meal3</p>
+      </Div>
+      <Div class = 'item'>
+        <img src = "https://via.placeholder.com/300.png/09f/fff?text=Meal4">
+        <p class = 'mdc-typography--headline6'>Meal4</p>
+      </Div>
+    </Div>
+    
+    <Div class = 'actions'>
+      <span class = 'material-icons rated' data-rate = "1">star</span>
+      <span class = 'material-icons rated' data-rate = "2">star</span>
+      <span class = 'material-icons rated' data-rate = "3">star</span>
+      <span class = 'material-icons rated' data-rate = "4">star</span>
+      <span class = 'material-icons rated' data-rate = "5">star</span>
+    </Div>
+    
+    <script>
+      let menu = [];
+      
+      const getRating = (star) => {
+        return Number(star.getAttribute('data-rate'));
+      }
+
+      const formatMoney = (figure) => {
+        return figure.toLocaleString('en-US', {style: 'currency', currency: 'USD'});
+      };
+      
+      const tipWith = (tip) => {
+        const tipFee = formatMoney(tip);
+        
+        document.querySelector('.tip').textContent = tipFee;
+      };
+      
+      const calculateTip = () => {
+        const selected = document.querySelector('.item[data-selected]');
+        const hasRated = document.querySelectorAll('.rated');
+        
+        if (hasRated.length === 0  || selected === null) 
+          return;
+        
+        const mealId = selected.getAttribute('data-meal-id');
+        
+        const meal = menu.find(({id}) => id === mealId);
+        
+        if (meal === undefined) 
+          return;
+        document.querySelector('.tip').textContent = '';
+        
+        if(hasRated.length < 3) 
+          return;
+        
+        const tip = (hasRated.length / 50) * meal['price'];
+        const approxTip = tip.toFixed(1);
+        
+        tipWith(approxTip)
+      };
+      
+      const mealChoosen = ({target}) => {
+        const items = document.querySelectorAll('.item[data-selected]');
+        items.forEach((item) => {
+          item.removeAttribute('data-selected')
+        });
+        
+        const parent = target.parentNode;
+        
+          parent.setAttribute('data-selected', '');
+        
+        calculateTip();
+      };
+      
+      const rateMeal = ({target}) => {
+        
+        const item = document.querySelector('.item[data-selected]');
+        if (item === null) 
+          return;
+       
+        const rated = document.querySelectorAll('.rated');
+          rated.forEach((star) => {
+            star.classList.remove('rated');
+            });
+        const rating =  getRating(target);
+        const ratings = document.querySelectorAll('.actions span');
+          ratings.forEach((each) => {
+            const val = Number(each.getAttribute('data-rate'));
+            
+            if(val <= rating) 
+              each.classList.add('rated');
+          });
+        
+        calculateTip();
+      };
+      
+      const uiCanInteract = () => {
+        const choose = document.querySelectorAll('.menu img');
+        choose.forEach((each) => each.addEventListener('click', mealChoosen));
+        const rate = document.querySelectorAll('.actions span');
+        rate.forEach((each) => each.addEventListener('click', rateMeal));
+      };
+      
+      const displayMenu = ({results}) => {
+        
+        const [data] = results;
+        menu = Object.values(data);
+        
+        const items = document.querySelectorAll('.item');
+        
+        menu.forEach((meal,i) => {
+          items[i].querySelector('img').src = meal['sample'];
+          items[i].querySelector('p').textContent = formatMoney(meal['price']);
+          items[i].setAttribute('data-meal-id', meal['id']);
+        });
+        
+        uiCanInteract();
+      }
+     
+      const fetchAndDisplayMenu = () => {
+        const api = 'https://randomapi.com/api/d12c99b82acfefae33f7ce9239b57811';
+        
+        fetch(api)
+          .then(response => response.json())
+          .then(data => displayMenu(data));
+      };
+      
+      const startApp = () => {
+        fetchAndDisplayMenu();
+      };
+      
+      startApp();
+    </script>
+    
+  </body>
+</html>
